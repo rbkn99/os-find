@@ -12,7 +12,8 @@ file_walker::file_walker(params_holder _ph): ph(std::move(_ph)) {}
 void file_walker::walk(string const &dir_name) {
     DIR* dir = opendir(dir_name.c_str());
     if (dir == nullptr) {
-        throw std::invalid_argument("Cannot open directory: " + dir_name);
+        cerr << "Cannot open directory: " + dir_name << endl;
+        return;
     }
 
     dirent* entry = readdir(dir);
