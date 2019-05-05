@@ -24,7 +24,8 @@ private:
         cerr.flush();
     }
 
-    static void exec(string const& exec_path, vector<char*> const& args);
+    static void exec(vector<string>& args);
+    static vector<char*> to_c_vec(vector<string>& v);
 };
 
 

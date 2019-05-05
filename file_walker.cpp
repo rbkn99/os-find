@@ -16,10 +16,11 @@ void file_walker::walk(string const &dir_name) {
         return;
     }
 
-    dirent* entry = readdir(dir);
-    while (entry) {
+    dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
         string name = entry->d_name;
         string path = dir_name + "/" + name;
+        //cout << name << endl;
 
         switch (entry->d_type) {
             case DT_DIR:
@@ -31,19 +32,30 @@ void file_walker::walk(string const &dir_name) {
                 if (ph.is_file_acceptable(name, path)) {
                     file_paths.push_back(path);
                     if (ph.exec_path.has_value()) {
-                        vector<char*> arg;
-                        arg.push_back(const_cast<char*>(path.c_str()));
-                        exec(ph.exec_path.get(), arg);
+                        vector<string> arg;
+                        arg.push_back(ph.exec_path.get());
+                        arg.push_back(path);
+                        //cout << arg[0];
+                        exec(arg);
                     }
                 }
                 break;
         }
-        entry = readdir(dir);
     }
     closedir(dir);
 }
 
-void file_walker::exec(string const &exec_path, vector<char *> const &args) {
+vector<char*> file_walker::to_c_vec(vector<string> &v) {
+    vector<char*> c_vec(v.size() + 1);
+    for (int i = 0; i < v.size(); i++) {
+        c_vec[i] = const_cast<char*>(v[i].data());
+    }
+    c_vec.back() = nullptr;
+    return c_vec;
+}
+
+void file_walker::exec(vector<string> &args) {
+    auto c_args = to_c_vec(args);
     pid_t pid;
     switch (pid = fork()) {
         case -1: // error
@@ -51,7 +63,7 @@ void file_walker::exec(string const &exec_path, vector<char *> const &args) {
             break;
         case 0: //child subprocess
             //cout << args[0] << endl;
-            if (execv(exec_path.c_str(), args.data()) == -1) {
+            if (execv(c_args[0], c_args.data()) == -1) {
                 log_error("program finished with -1 code.");
                 exit(EXIT_FAILURE);
             }
